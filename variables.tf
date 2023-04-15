@@ -1,56 +1,126 @@
-variable "server_port" {
-  description = "The port the server will use for HTTP requests"
-  type        = number
-  default     = 8080
-}
-variable "number_example" {
-  description = "An example of a number variable in Terraform"
-  type        = number
-  default     = 42
-}
+################################################
+#####          General variables           #####
+################################################
 
-variable "list_example" {
-  description = "An example of a list in Terraform"
-  type        = list
-  default     = ["a", "b", "c"]
-}
-
-variable "list_numeric_example" {
-  description = "An example of a numeric list in Terraform"
-  type        = list(number)
-  default     = [1, 2, 3]
-}
-
-variable "map_example" {
-  description = "An example of a map in Terraform"
+variable "tags" {
+  description = "A mapping of tags to assign to resources."
   type        = map(string)
-
   default = {
-    key1 = "value1"
-    key2 = "value2"
-    key3 = "value3"
+    Terraform = "true"
   }
 }
 
-variable "object_example" {
-  description = "An example of a structural type in Terraform"
-  type        = object({
-    name    = string
-    age     = number
-    tags    = list(string)
-    enabled = bool
-  })
-
-  default = {
-    name    = "value1"
-    age     = 42
-    tags    = ["a", "b", "c"]
-    enabled = true
-  }
-}
-
-variable "security_group_name" {
-  description = "The name of the security group"
+variable "region" {
+  description = "The AWS region in which resources are set up."
   type        = string
-  default     = "terraform-example-instance"
+}
+
+######################################################################
+##### IAM Policy for Executing Terraform with Remote States      #####
+######################################################################
+
+variable "terraform_iam_policy_create" {
+  description = "Specifies whether to terraform IAM policy is created."
+  type        = bool
+  default     = true
+}
+
+variable "terraform_iam_policy_name_prefix" {
+  description = "Creates a unique name beginning with the specified prefix."
+  type        = string
+  default     = "tw-terraform"
+}
+
+################################################
+##### KMS Key for Encrypting S3 Buckets    #####
+################################################
+
+variable "kms_key_alias" {
+  description = "The alias for the KMS key as viewed in AWS console. It will be automatically prefixed with `alias/`"
+  type        = string
+}
+
+variable "kms_key_deletion_window_in_days" {
+  description = "Duration in days after which the key is deleted after destruction of the resource, must be between 7 and 30 days."
+  type        = number
+  default     = 30
+}
+
+variable "kms_key_enable_key_rotation" {
+  description = "Specifies whether key rotation is enabled."
+  type        = bool
+  default     = true
+}
+
+################################################
+#####         S3 Buckets                   #####
+################################################
+
+variable "enable_replication" {
+  description = "Set this to true to enable S3 bucket replication in another region"
+  type        = bool
+  default     = false
+}
+
+variable "state_bucket_prefix" {
+  description = "Creates a unique state bucket name beginning with the specified prefix."
+  type        = string
+}
+
+variable "iam_role_arn" {
+  description = "Use IAM role of specified ARN for s3 replication instead of creating it."
+  type        = string
+  default     = null
+}
+
+variable "iam_role_name_prefix" {
+  description = "Creates a unique name beginning with the specified prefix."
+  type        = string
+  default     = "tw-tf-remote-state-replication-role"
+}
+
+variable "iam_policy_name_prefix" {
+  description = "Creates a unique name beginning with the specified prefix."
+  type        = string
+  default     = "tw-tf-remote-state-replication-policy"
+}
+
+variable "iam_policy_attachment_name" {
+  description = "The name of the attachment."
+  type        = string
+  default     = "tw-tf-iam-role-attachment-replication-configuration"
+}
+
+
+################################################
+#####   DynamoDB Table for State Locking   #####
+################################################
+
+variable "dynamodb_table_name" {
+  description = "The name of the DynamoDB table to use for state locking."
+  type        = string
+}
+
+#####################################################
+##### Optionally specifying a fixed bucket name #####
+#####################################################
+
+
+variable "s3_bucket_name" {
+  description = "If override_s3_bucket_name is true, use this bucket name instead of dynamic name with bucket_prefix"
+  type        = string
+  default     = ""
+  validation {
+    condition     = length(var.s3_bucket_name) == 0 || length(regexall("^[a-z0-9][a-z0-9\\-.]{1,61}[a-z0-9]$", var.s3_bucket_name)) > 0
+    error_message = "Input variable s3_bucket_name is invalid. Please refer to https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html."
+  }
+}
+variable "s3_bucket_name_replica" {
+  description = "If override_s3_bucket_name is true, use this bucket name for replica instead of dynamic name with bucket_prefix"
+  type        = string
+  default     = ""
+  validation {
+    condition     = length(var.s3_bucket_name_replica) == 0 || length(regexall("^[a-z0-9][a-z0-9\\-.]{1,61}[a-z0-9]$", var.s3_bucket_name_replica)) > 0
+    error_message = "Input variable s3_bucket_name_replica is invalid. Please refer to https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html."
+  }
 }
